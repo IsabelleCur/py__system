@@ -22,7 +22,7 @@ terminal:run:
 ##### npm run serve
 <<<<<<< HEAD
 
-##3
+## 3
 ![avatar](image/1.png)
 =======
 >>>>>>> 4006206c60e05b6393d8972cad8e30a77e60ac73
