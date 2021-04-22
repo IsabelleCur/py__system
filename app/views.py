@@ -47,6 +47,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     "userInfo":{
                         "nickname" : user.nickname,
                         "account" : user.account,
+                        "balance" : user.balance,
                         "lastLogDate" :  user.lastLogDate
                     }
                 }
@@ -80,6 +81,7 @@ class UserViewSet(viewsets.ModelViewSet):
                         "userInfo" : {
                             "nickname" : user.nickname,
                             "account" : user.account,
+                            "balance" : user.balance,
                             "lastLogDate" :  user.lastLogDate
                         }
                     }
@@ -111,6 +113,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     "userInfo" : {
                         "account" : account,
                         "nickname" : nickname,
+                        "balance" : user.balance,
                     }
                 }
             })
@@ -128,6 +131,25 @@ class UserViewSet(viewsets.ModelViewSet):
         password = request.data["params"]["password"]
         try:
             User.objects.filter(account = account).update(password = password)
+            # 系统总没有该用户，则注册成功
+            return JsonResponse({
+                "status" : 0,
+                "mes" : "success",
+            })
+        except:
+            # 注册失败
+            return JsonResponse({
+                "status":1,
+                "mes" : "fail"
+            })
+
+    # 接口为 http://127.0.0.1:8000/api/user/changeBalance/
+    @action(methods = ['post'], detail = False)
+    def changeBalance(self,request, pk = None):
+        account = request.data["params"]["account"]
+        balance = request.data["params"]["balance"]
+        try:
+            User.objects.filter(account = account).update(balance = balance)
             # 系统总没有该用户，则注册成功
             return JsonResponse({
                 "status" : 0,

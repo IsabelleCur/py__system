@@ -1,5 +1,5 @@
 // 登录用户的仓库数据
-import {login, whoAmI, logout,register, changeNickname, changePassword} from "../services/userService"
+import {login, whoAmI, logout,register, changeNickname, changePassword,changeBalance} from "../services/userService"
 export default{
     namespaced: true,
     state: {
@@ -102,6 +102,22 @@ export default{
                 return ;
             }
             
+        },
+
+        async setBalance(context, payload){
+            context.commit("setIsLoading", true);
+            setTimeout(() => {
+                context.commit("setIsLoading", false);
+            }, 2000);
+
+            var resp = await changeBalance({
+                account : context.state.userInfo.account,
+                balance: payload
+            })
+            if(resp.status == 200 && resp.data.status == 0){   
+                //修改成功
+            }
+            return resp.status
         },
     },
 }

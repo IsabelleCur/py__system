@@ -3,20 +3,23 @@ web-based
 
 
 
-##1
+## 1
 VSCode:
 
 terminal:run:
 
-#####python manage.py runserver
+##### python manage.py runserver
 
-##2
+## 2
 VSCode:
 
 terminal:run:
 
-#####cd appfront
+##### cd appfront
 
-#####sudo rm -rf node_modules package-lock.json && npm install
+##### sudo rm -rf node_modules package-lock.json && npm install
 
-#####npm run serve
+##### npm run serve
+
+##3
+![avatar](image/1.png)

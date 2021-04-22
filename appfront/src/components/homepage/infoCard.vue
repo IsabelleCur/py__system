@@ -35,7 +35,14 @@
 
                 <q-tab-panel name="history">
                     <div class="text-h4 q-mb-md">Balance</div>
-                    <div class="text-h1">HK$5,000</div>
+                    <div class="text-h1">HK${{ userInfo.balance }}</div>
+                    <!--<q-label name="balance" class="balance text-overline"> {{ userInfo.balance }} </q-label>-->
+                    <div class=" q-gutter-md input-form">
+                        <q-input v-model="balance" label="Consumption Amount"/>
+                        <q-btn class="full-width" color="primary" :loading="isLoading" :disable="b_IsValide" @click="handleConsumptionClick">
+                            CONFIRM
+                        </q-btn>
+                    </div>
                 </q-tab-panel>
 
                 <q-tab-panel name="bookmark">
@@ -67,18 +74,34 @@ export default {
     data(){
         return {
             tab: 'infomation',
-            splitterModel: 50
+            splitterModel: 50,
+            balance: ''
         }
     },
     computed:{
         historyNum(){
-            return 10;
+            return 10;//this.balance
         },
         favoriteNum(){
             return this.newsList.length ;
         },
-        ...mapState('favorite', ['newsList', 'isLoading'])
-
+        ...mapState('favorite', ['newsList', 'isLoading']),
+        ...mapState('userInfo', ['isLoading', 'userInfo']),
+        b_IsValide(){
+            if(
+                this.balance > this.userInfo.balance 
+            ){
+                return true
+            }
+            return false
+        }, 
+    },
+    methods:{
+        handleConsumptionClick(){
+            console.log(this.userInfo.balance-this.balance)
+            this.$store.dispatch('userInfo/setBalance', this.userInfo.balance-this.balance)
+            console.log(this.userInfo.balance)
+        }
     },
     props:{
         nickname:{
@@ -110,5 +133,9 @@ export default {
     margin-left:40px;
     height:800px;
     /* border:1px black solid */
+}
+
+.input-form{
+    max-width:300px
 }
 </style>

@@ -11,7 +11,7 @@ export async function login(loginInfo){
     // 直接保存用户信息
     localStorage.setItem("nickname", resp.data.data.userInfo.nickname)
     localStorage.setItem("account", resp.data.data.userInfo.account)
-
+    localStorage.setItem("balance", resp.data.data.userInfo.balance)
     return resp;
 }
 
@@ -73,6 +73,21 @@ export async function changePassword(payload){
         }}
     }, 2000);
     var resp = await axios.post(`${URL}api/user/changePassword/`,{
+            params: payload,
+        }
+    );
+    // console.log(resp)
+    return resp;
+}
+
+export async function changeBalance(payload){
+    setTimeout(() => {
+        return {data:{
+            status:1,
+            mes:"timeout"
+        }}
+    }, 2000);
+    var resp = await axios.post(`${URL}api/user/changeBalance/`,{
             params: payload,
         }
     );

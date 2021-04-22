@@ -4,6 +4,7 @@
         <q-btn class="full-width" color="primary" :loading="isLoading" :disable="n_IsValide" @click="handleNicknameClick">
             CONFIRM
         </q-btn>
+        
         <q-input v-model="password" type="password"  label="password" />
         <q-btn class="full-width" color="primary" :loading="isLoading" :disable="p_IsValide" @click="handlePasswordClick" >
             CONFIRM
