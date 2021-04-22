@@ -20,7 +20,6 @@ terminal:run:
 ##### sudo rm -rf node_modules package-lock.json && npm install
 
 ##### npm run serve
-<<<<<<< HEAD
 
 ## 3
 ![avatar](image/1.png)
