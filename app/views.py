@@ -1,7 +1,12 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 import json
-# Create your views here.
+import hashlib
+import rsa
+# Create your views here.'
+from Crypto.Cipher import AES
+import base64
+import random
 
 # django as back end
 from rest_framework import viewsets 
@@ -9,12 +14,57 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 
-from app.models import User, Favorite, History
+from app.models import User, Favorite, History, Record
 from app.serializer import UserSerializer, FavoriteSerializer, HistorySerializer
 
 # 获取当前时间
 import datetime
 
+def rsaEncrypt(par,pubkey):
+    # 明文编码格式
+    par = par.encode()#K RA RB是string，转成bytes
+    # 公钥加密
+    crypto = rsa.encrypt(par, pubkey)
+    return crypto
+
+
+# rsa解密
+def rsaDecrypt(str, pk):
+    # 私钥解密
+    content = rsa.decrypt(str, pk)
+    #con = content.decode("utf-8")
+    return content
+
+class Aescrypt():
+    def __init__(self,key,model,iv):
+        self.key = self.add_16(key)
+        self.model = model
+        self.iv = iv
+
+    def add_16(self,par):
+        if type(par) == str:
+            par = par.encode()
+        while len(par) % 16 != 0:
+            par += b'\x00'
+        return par
+
+    def aesencrypt(self,text):
+        text = self.add_16(text)
+        if self.model == AES.MODE_CBC:
+            self.aes = AES.new(self.key,self.model,self.iv) 
+        elif self.model == AES.MODE_ECB:
+            self.aes = AES.new(self.key,self.model) 
+        self.encrypt_text = self.aes.encrypt(text)
+        return self.encrypt_text
+
+    def aesdecrypt(self,text):
+        if self.model == AES.MODE_CBC:
+            self.aes = AES.new(self.key,self.model,self.iv) 
+        elif self.model == AES.MODE_ECB:
+            self.aes = AES.new(self.key,self.model) 
+        self.decrypt_text = self.aes.decrypt(text)
+        self.decrypt_text = self.decrypt_text.strip(b"\x00")
+        return self.decrypt_text
 
 # 将返回所有的用户信息
 # 建立一个用户的视图集合
@@ -31,6 +81,10 @@ class UserViewSet(viewsets.ModelViewSet):
     def login(self,request, pk = None):
         account = request.data["params"]["account"]
         password = request.data["params"]["password"]
+
+        sha=hashlib.sha1(password.encode("utf8"))#encrypt password sha1
+        password=sha.hexdigest()
+
         user = User.objects.filter(
             account = account, 
             password = password
@@ -48,6 +102,7 @@ class UserViewSet(viewsets.ModelViewSet):
                         "nickname" : user.nickname,
                         "account" : user.account,
                         "balance" : user.balance,
+                        "password" : password,
                         "lastLogDate" :  user.lastLogDate
                     }
                 }
@@ -64,6 +119,16 @@ class UserViewSet(viewsets.ModelViewSet):
         account = request.data["params"]["account"]
         nickname = request.data["params"]["nickname"]
         password = request.data["params"]["password"]
+        name = request.data["params"]["name"]
+        number = request.data["params"]["number"]
+        gender = request.data["params"]["gender"]
+        birth = request.data["params"]["birth"]
+
+        sha=hashlib.sha1(password.encode("utf8"))#encrypt password sha1
+        password=sha.hexdigest()#w=hash(password)
+
+    
+
         user = User.objects.filter(account = account).first()
         print(user == None)
         try:
@@ -72,8 +137,14 @@ class UserViewSet(viewsets.ModelViewSet):
                 User.objects.create(
                     account = account,
                     nickname = nickname,
-                    password = password
+                    password = password,
+                    name = name,
+                    number = number,
+                    gender = gender,
+                    birth = birth,
+                    
                 )
+                print(user.balance)
                 return JsonResponse({
                     "status" : 0,
                     "mes" : "success",
@@ -82,6 +153,7 @@ class UserViewSet(viewsets.ModelViewSet):
                             "nickname" : user.nickname,
                             "account" : user.account,
                             "balance" : user.balance,
+                            "password" : password,
                             "lastLogDate" :  user.lastLogDate
                         }
                     }
@@ -114,6 +186,7 @@ class UserViewSet(viewsets.ModelViewSet):
                         "account" : account,
                         "nickname" : nickname,
                         "balance" : user.balance,
+                        "password" : password,
                     }
                 }
             })
@@ -148,19 +221,108 @@ class UserViewSet(viewsets.ModelViewSet):
     def changeBalance(self,request, pk = None):
         account = request.data["params"]["account"]
         balance = request.data["params"]["balance"]
+        user = User.objects.filter(account = account).first()
+        #price = user.balance-balance
+        password=user.password
+
+        (pubkey, privkey) = rsa.newkeys(1024)
+        # 生成公钥
+        pub = pubkey.save_pkcs1()
+        # 生成私钥
+        pri = privkey.save_pkcs1()
+        text=pub
+
+        length = 16
+        count = len(text)
+        add = length - (count % length)
+        text = text + (b'\00'*add)
+
+        key=password#key=password=w=hash(password)
+        key=key[:16]
+        print("key=",key)
+        iv = '1234567812345678'
+
+        aescryptor = Aescrypt(key,AES.MODE_CBC,iv)
+        #print(aescryptor.key)
+        en_text = aescryptor.aesencrypt(text)#text, en_text, de_text都与pubkey有关
+        de_text = aescryptor.aesdecrypt(en_text)#都是byte格式 
+
+        Rlist=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+       '1','2','3','4','5','6','7','8','9','0',
+       'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+       ',','.','_','-','?','!','@','#','$','%','^','&','*','(',')']
+        #K,RA,RB are string
+        K=""
+        n=random.sample(Rlist, 16)
+        for i in n:
+            K=K+i
+        print("K=",K)
+
+        RA=""
+        n=random.sample(Rlist, 16)
+        for i in n:
+            RA=RA+i
+        print("RA=",RA)
+
+        RB=""
+        n=random.sample(Rlist, 16)
+        for i in n:
+            RB=RB+i
+        print("RB=",RB)
+
+        #B->A: Encw(PKE(K))
+        RSAK=rsaEncrypt(K,pubkey)#秘文， bytes
+        aK = Aescrypt(key,AES.MODE_CBC,iv)#W as key
+        en_K = aK.aesencrypt(RSAK)#encrypt PKE(K)
+
+        #A->B: Enck(RA)
+        de_RSAK = aK.aesdecrypt(en_K)#decrypted_RSAK
+        K_de_private=rsaDecrypt(de_RSAK, privkey)#decrypted_K
+        print("de_K=",K_de_private)
+        aRA = Aescrypt(K_de_private,AES.MODE_CBC,iv)#decrypted_K as key
+        en_RA = aRA.aesencrypt(RA)#encrypt RA
+
+        #B->A: Enck(RA,RB)
+        de_RA = aRA.aesdecrypt(en_RA)
+        print("de_RA=",de_RA)
+        RARB=de_RA.decode("utf-8")+RB
+        print("RARB",RARB)
+        aRARB = Aescrypt(K,AES.MODE_CBC,iv)
+        en_RARB=aRARB.aesencrypt(RARB)
+
+        #A->B: Enck(RB)
+        de_RARB=aRARB.aesdecrypt(en_RARB)
+        print("de_RARB",de_RARB)
+        de_RARB_RB=de_RARB[16:32]
+        aRB = Aescrypt(K_de_private,AES.MODE_CBC,iv)
+        en_RB = aRB.aesencrypt(de_RARB_RB)
+
+        #B: Deck(text)
+        de_RB=aRB.aesdecrypt(en_RB)
+        print(de_RB.decode("utf-8")==RB)
+        print(de_RB)
+        print(RB)
+
+        ID =""
+        n=random.sample(Rlist, 16)
+        for i in n:
+            ID=ID+i
+        record = Record.objects.filter(ID = ID).first()
+        print(record == None)
         try:
             User.objects.filter(account = account).update(balance = balance)
-            # 系统总没有该用户，则注册成功
             return JsonResponse({
-                "status" : 0,
-                "mes" : "success",
-            })
+                    "status":0,
+                    "mes" : "success",
+                    
+                })
         except:
             # 注册失败
             return JsonResponse({
                 "status":1,
                 "mes" : "fail"
             })
+        
     
 
 # 用户收藏视图集

@@ -90,7 +90,7 @@ export default {
                 number:this.number,
                 gender:this.gender,
                 birth:this.birth,
-                password : this.password
+                password : this.password,
             }
             this.$store.dispatch("userInfo/regUser",payload).then(() =>{
                 if(this.userInfo && this.isLoading){
@@ -106,6 +106,8 @@ export default {
                     }
                 }
             })
+            console.log(this.nickname)
+            
         },
     },
 
